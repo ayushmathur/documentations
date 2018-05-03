@@ -1,0 +1,92 @@
+sources.list -> 
+deb http://192.168.76.57/sw/repo/debian jessie main
+deb http://192.168.76.57/sw/repo/maria_db/debian/8.6.0/amd64 /
+
+##Barnyard 
+
+# Install dependencies
+apt-get install mariadb-server mariadb-client libmariadbclient18 libmariadbclient-dev libmariadbd-dev autoconf libtool unzip dos2unix
+add maria db root user details
+
+# configure snort.conf 
+in /etc/snort/snort.conf
+In Step 6 #Configure output plugin
+under line output unified2, line 522, add entry:
+>output unified2: filename snort.u2, limit 128
+
+# Get barnyard files in a folder
+mkdir ~/downloads
+cd downloads
+wget http://192.168.76.57/sw/sec_tools/snort/barnyard2-master.zip 
+unzip barnyard2-master.zip
+cd barnyard2-master/
+
+# Install barnyard
+./autogen.sh
+ln -s /usr/include/dumbnet.h /usr/include/dnet.h
+ldconfig
+./configure --with-mysql --with-mysql-libraries=/usr/lib/
+
+make
+make install
+which barnyard2
+
+# Configure barnyad and chown directories to user snort 
+pwd- /root/downloads/barnyard2-master
+cp etc/barnyard2.conf /etc/snort/
+mkdir /var/log/barnyard2/
+touch /var/log/snort/barnyad2.waldo
+chown snort:snort /var/log/snort/barnyard2.waldo
+
+# Create databaseand  Generate schema in database
+-mysql -u root -p
+CREATE DATABASE IF NOT EXISTS snort;
+USE snort;
+source /root/downloads/barnyard2-master/schemas/create_mysql;
+create user 'snort'@'localhost' Identified by 'toor';
+grant create,insert,select,delete,update on snort.* to 'snort'@'localhost';
+exit 
+
+#Configure barnyard.conf 
+vim /etc/snort/barnyad.conf
+In the end write:
+output database: log,mysql,user=snort password=toor dbname=snort host=localhost
+
+# Changing permission
+chmod o-r /etc/snort/barnyard2.conf
+
+# In downloads folder, get following file 
+wget http://192.168.76.57/sw/sec_tools/snort/create-sidmap.pl 
+dos2unix create-sidemap.pl 
+chmod 755 create-sidemap.pl 
+./create-sidemap.pl /etc/snort/rules/ > /etc/snort/sid-msg.map  
+
+# Add rev:1 in snort local rules 
+vim /etc/snort/rules/local.rules  add this line
+alert ip any any -> any any (msg: "IP Packet Found"; sid:36666666; rev:1)
+
+#Run snort and keep it opnen in a seperate terminal 
+snort -q -u snort -g snort -c /etc/snort/snort.conf -i eth0
+
+#Run barnyard and keep it open in a seperate terminal
+barnyard2 -c /etc/snort/barnyard2.conf -d /var/log/snort/ -f snort.u2 -w /var/log/snort/barnyard2.waldo -g snort -u snort
+
+##BASE- Base analysis and security engine
+
+#Install dependencies 
+apt-get install apache2 php5 p7zip libapache2-mod-php5 php5-mcrypt php5-mysqlnd libphp-adodb unzip
+
+#Get base file, untar, move, change ownership
+cd downloads
+wget -----------------base
+tar base
+mv base-1.2.5 /var/www/html/base/
+chown -R www-data:www-data /var/www/html/base/
+
+#Configure apache2
+vim /etc/php5/apache2/php.ini 
+in line 449
+error_reporting = E_ALL &  ~E_NOTICE
+service apache restart
+access the website at <ip>/base 
+setup base with details we entered in above setup. #######Take care of adobd path. /usr/share/php/adobd 
