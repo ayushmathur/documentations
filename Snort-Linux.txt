@@ -1,0 +1,101 @@
+# initial setup and dependency test
+
+apt-get install bison build-essential checkinstall flex iptables-dev libc6-dev libc-dev-bin libdnet libdnet-dev libdumbnet1 libdumbnet-dev 
+libghc-zlib-dev libnet1 libnet1-dev libnetfilter-queue1 libnetfilter-queue-dev libnfnetlink-dev libpcap-dev libpcre3-dev linux-libc-dev make pkg-config tree
+
+# Install DAQ (Data aquisition library)
+mkdir /usr/src/snort_src
+
+cd /usr/src/snort_src/
+
+wget -q http://192.168.76.57/sw/sec_tools/snort/daq-2.0.6.tar.gz
+
+tar -xzf daq-2.0.6.tar.gz
+
+cd daq-2.0.6/
+
+./configure
+make
+make install
+
+# Install snort
+cd /usr/src/snort_src
+wget http://192.168.76.57/sw/sec_tools/snort/snort-2.9.8.3.tar.gz
+tar -xzf snort-2.9.8.3.tar.gz
+cd snort-2.9.8.3/
+./configure --enable-sourcefire
+make
+make install
+ldconfig  (Load modules)
+snort -v   (test snort)
+
+# Post configuration
+groupadd snort
+useradd snort -r -s /usr/sbin/nologin -c SNORT_IDS -g snort
+
+>Create required folders
+
+mkdir /etc/snort
+mkdir /etc/snort/rules
+mkdir /etc/snort/preproc_rules
+mkdir /var/log/snort
+mkdir /usr/local/lib/snort_dynamicrules
+
+>Setup / Copy config files
+
+cp /usr/src/snort_src/snort-2.9.8.3/etc/*.conf* /etc/snort/
+cp /usr/src/snort_src/snort-2.9.8.3/etc/*.map /etc/snort/
+touch /etc/snort/rules/white_list.rules
+touch /etc/snort/rules/black_list.rules
+touch /etc/snort/rules/local.rules
+
+> Change File and Directory ownership
+
+chmod -R 5775 /etc/snort/
+chmod -R 5775 /var/log/snort/
+chmod -R 5775 /usr/local/lib/snort_dynamicrules/
+chmod -R 5775 /usr/local/lib/snort
+chmod -R 5775 /usr/local/lib/snort_dynamicengine/
+chmod -R 5775 /usr/local/lib/snort_dynamicpreprocessor/
+chmod -R 5775 /usr/local/lib/pkgconfig/
+chmod -R 5775 /usr/local/bin/daq-modules-config
+chmod -R 5775 /usr/local/bin/u2boat
+chmod -R 5775 /usr/local/bin/u2spewfoo
+chown -R snort:snort /etc/snort/
+chown -R snort:snort /var/log/snort/
+chown -R snort:snort /usr/local/lib/snort_dynamicrules/
+chown -R snort:snort /usr/local/lib/snort
+chown -R snort:snort /usr/local/lib/snort_dynamicengine/
+chown -R snort:snort /usr/local/lib/snort_dynamicpreprocessor/
+chown -R snort:snort /usr/local/lib/pkgconfig/
+chown -R snort:snort /usr/local/bin/daq-modules-config
+chown -R snort:snort /usr/local/bin/u2boat
+chown -R snort:snort /usr/local/bin/u2spewfoo
+
+> Make a backup of snort.conf and start editing iptables
+
+cp /etc/snort/snort.conf /etc/snort/snort.conf.org
+vim /etc/snort/snort.conf
+Line 104 and ahead should be
+var RULE_PATH /etc/snort/rules
+var SO_RULE_PATH /etc/snort/so_rules
+var PREPROC_RULE_PATH /etc/snort/preproc_rules
+Line 113 should be 
+var WHITE_LIST_PATH /etc/snort/rules
+var BLACK_LIST_PATH /etc/snort/rules
+
+In step 7, comment all rule paths and add only these
+# site specific rules
+include $RULE_PATH/local.rules
+include $RULE_PATH/white_list.rules
+include $RULE_PATH/black_list.rules
+
+# Test snort
+root@serv1:/usr/src/snort_src/snort-2.9.8.3# snort -T -i eth0 -u snort -g snort -c /etc/snort/snort.conf
+
+# Run snort
+root@serv1:/usr/src/snort_src/snort-2.9.8.3# snort -i eth0 -u snort -g snort -c /etc/snort/snort.conf -A console
+
+# Write rule in /etc/snort/rules/locals.rules
+
+alert ip any any -> any any (msg: "IP Packet Found"; sid:36666666;)
