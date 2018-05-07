@@ -1,7 +1,6 @@
 # initial setup and dependency test
 
-apt-get install bison build-essential checkinstall flex iptables-dev libc6-dev libc-dev-bin libdnet libdnet-dev libdumbnet1 libdumbnet-dev 
-libghc-zlib-dev libnet1 libnet1-dev libnetfilter-queue1 libnetfilter-queue-dev libnfnetlink-dev libpcap-dev libpcre3-dev linux-libc-dev make pkg-config tree
+apt-get install bison build-essential checkinstall flex iptables-dev libc6-dev libc-dev-bin libdnet libdnet-dev libdumbnet1 libdumbnet-dev libghc-zlib-dev libnet1 libnet1-dev libnetfilter-queue1 libnetfilter-queue-dev libnfnetlink-dev libpcap-dev libpcre3-dev linux-libc-dev make pkg-config tree
 
 # Install DAQ (Data aquisition library)
 mkdir /usr/src/snort_src
