@@ -1,0 +1,549 @@
+***********************iptables commands******************************************
+iptables -L 
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+apt-get install iptables-persistent
+mkdir /etc/iptables
+iptables-save>/etc/iptables/rules.v4
+reboot
+iptables-restore</etc/iptables/rules.v4
+iptables -L -v 
+iptables -A INPUT -s 192.168.100.200 -j ACCEPT
+iptables -L --line-numbers
+iptables -D INPUT 5(line-number)
+iptables -s 192.168.1.0/24 -j ACCEPT
+iptables -m iprange --src-range 192.168.1.15-192.168.1.25 -j ACCEPT
+iptables -m iprange --dst-range 192.168.1.15-192.168.1.25 -j ACCEPT
+iptables -s 192.168.1.12 -m mac --mac-source 00:12:12:55:55:44 -j ACCEPT
+iptables -p tcp --dport 6881 -j ACCEPT
+iptables -p tcp --destination-port 6881 -j ACCEPT
+( same for sport and source-port )
+
+iptables -A INPUT -p tcp -m tcp  --dport 22 --syn -j LOG --log-prefix "SSH CONNECTION:"
+ADD:(/etc/rsyslog.conf)
+	msg,contains,"[SSH CONNECTION:]"  /var/log/custom.log 
+/etc/init.d/rsyslog restart
+
+**************************************SNORT********************************************
+for windows:
+Install snort from sir's site 
+It should contain 9 folders + 1 file
+Rules folder should be empty
+extract sir's rules file in c:\snort
+check rules folder it should have approx 45 rules.
+goto commandline:
+snort -W
+snort -i 1 -dev
+snort -i 1 -c c:\snort\etc\snort.conf -l c:\snort\log -A console
+ERROR 1:ipvar
+	Replace all ipvar with var (11 occurances) in snort.conf file.
+ERROR 2:dyanmicpreprocessor line 247
+	correct the path for all the files in c:\snort\lib\dyanmicpreprocessor\
+	14 files
+	goto that folder press shift + right click -> click on "open command prompt here" 
+	type #dir \b 
+	change path for all 14 files.
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_dce2.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_dnp3.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_dns.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_ftptelnet.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_gtp.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_imap.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_modbus.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_pop.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_reputation.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_sdf.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_sip.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_smtp.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_ssh.dll
+dynamicpreprocessor C:\Snort\lib\snort_dynamicpreprocessor\sf_ssl.dll
+ERROR 3:dynamicengine line 263
+		Enter correct path for the file c:\Snort\lib\snort_dynamicengine\sf_engine.dll
+ERROR 4:dynamicrules
+		create a dummy folder in c:\snort\lib\snort_dynamicrules
+		change the path in snort.conf file.
+ERROR 5:normalize ipv4
+			search normalize ipv4 in snort.conf and comment all the 5 lines.(below inclined packet line)
+ERROR 6: snort\rules\white.rules
+				goto option->view-> uncheck the hide extension box.
+				create file white_list.rules in snort\rules\
+ERROR 7: snort\rules\black.rules
+				goto option->view-> uncheck the hide extension box.
+				create file black_list.rules in snort\rules\
+PID will come ---means successfull installation
+
+other changes: 104-106
+var RULE_PATH ../rules    ->    var RULE_PATH C:\snort\rules
+var SO_RULE_PATH ../so_rules    ->    var SO_RULE_PATH_PATH C:\snort\so_rules
+var PREPROC_RULE_PATH ../preproc_rules   ->  var PREPROC_RULE_PATH c:\snort\preproc_rules
+
+
+var WHITE_LIST_PATH ../rules   ->     var WHITE_LIST_PATH ..\rules
+var BLACK_LIST_PATH ../rules	-> 		var BLACK_LIST_PATH ..\rules
+
+line:525
+whitelist $WHITE_LIST_PATH /white_list.rules, \        ->		whitelist $WHITE_LIST_PATH \white_list.rules, \
+blacklist $BLACK_LIST_PATH /black_list.rules       ->		blacklist $Black_LIST_PATH \black_list.rules
+
+#step 6
+include $RULE_PATH /blacklist.rules      ->		include $RULE_PATH /black_list.rules
+
+
+Testing:
+snort -i 1 - c c:\snort\etc\snort.conf -l c:\snort\log -T 
+snort -i 1 - c c:\snort\etc\snort.conf -l c:\snort\log -A console
+
+
+create custom rules:
+	create a rule file "myrule.rules" in c:\snort\rules\ folder
+	add line --- alert ip any any -> any any (msg:"IP PACKETS FOUND";sid:36666;)
+	snort -i 1 - c c:\snort\etc\snort.conf -l c:\snort\log -T 
+	snort -i 1 - c c:\snort\etc\snort.conf -l c:\snort\log -A console
+	
+--------------------------------Snort on linux--------------------------------------------------------------------
+
+apt-get install bison build-essential checkinstall flex iptables-dev libc6-dev libc-dev-bin libdnet libdnet-dev
+				libdumbnet1 libdumbnet-dev libghc-zlib-dev libnet1 libnet1-dev libnetfilter-queue-dev 
+				libnetfilter-queue1 libnfnetlink-dev libpcap-dev libpcre3-dev linux-libc-dev make pkg-config tree
+
+download and install DAQ from sir's website:
+mkdir /usr/src/snort_src
+cd  /usr/src/snort_src
+wget -q  path of the daq
+tar -zxf daq2..
+cd daq2.0.6/
+./configure
+make
+make install
+
+Download and intsall snort:				
+cd  /usr/src/snort_src
+wget -q path of snort
+tar -zxf snort
+cd snort
+./configure --enable-sourcefire 
+make
+make install
+which snort
+ldconfig 
+snort -V
+
+
+POST CONFIGURATION:
+
+getent group snort
+groupadd snort
+getent passwd snort
+useradd snort -r -s /usr/sbin/nologin -c SNORT_IDS -g snort
+
+CREATE THE REQUIRED FOLDERS:
+
+mkdir /etc/snort
+mkdir /etc/snort/rules
+mkdir /etc/snort/preproc_rules
+mkdir /var/log/snort
+mkdir /usr/local/lib/snort_dynamicrules
+
+
+SETUP: COPY THE CONFIG FILE
+
+cp /usr/src/snort_src/snort-2.9.8.3/etc/*.conf* /etc/snort/
+cp  /usr/src/snort_src/snort-2.9.8.3/etc/*.map* /etc/snort/
+
+ls -l /etc/snort
+
+touch /etc/snort/rules/white_list.rules
+touch /etc/snort/rules/black_list.rules
+touch /etc/snort/rules/local.rules
+
+CHANGE FILE DIRECTORY OWNERSHIP:
+
+chmod -R 5775 /etc/snort/
+				/var/log/snort/
+				/usr/local/lib/snort_dynamicrules/
+				/usr/local/lib/snort/
+				/usr/local/lib/dynamicengine/
+				/usr/local/lib/dynamicpreprocessor/
+				/usr/local/bin/daq-module-config
+				/usr/local/bin/u2boat/
+				/usr/local/bin/u2spewfoo/
+
+
+chown -R snort:snort /etc/snort/
+				/var/log/snort/
+				/usr/local/lib/snort_dynamicrules/
+				/usr/local/lib/snort/
+				/usr/local/lib/dynamicengine/
+				/usr/local/lib/dynamicpreprocessor/
+				/usr/local/bin/daq-module-config
+				/usr/local/bin/u2boat/
+				/usr/local/bin/u2spewfoo/
+other changes:
+var RULE_PATH ../rules    ->    var RULE_PATH /etc/snort/rules
+var SO_RULE_PATH ../so_rules    ->    var SO_RULE_PATH_PATH etc/snort/so_rules
+var PREPROC_RULE_PATH ../preproc_rules   ->  var PREPROC_RULE_PATH /etc/snort/preproc_rules
+
+
+var WHITE_LIST_PATH ../rules   ->     var WHITE_LIST_PATH /etc/snort/rules
+var BLACK_LIST_PATH ../rules	-> 		var BLACK_LIST_PATH /etc/snort/rules
+
+#step 6
+comment all the rules in site specif rules:
+include $RULE_PATH /local.rules
+include $RULE_PATH /white_list.rules
+include $RULE_PATH /black_list.rules
+				
+snort -T -i eth0  -u snort -g snort -c \etc\snort\snort.conf
+snort -A console -i eth0 -u snort -g snort -c \etc\snort\snort.conf
+
+vim /etc/snort/rules/local.rules
+alert ip any any -> any any (msg: "IP PACKET FOUND"; sid:36666;)
+
+include $SO_RULE_PATH/myrules.rules in last line of snort.conf file
+
+-------------------------------------BANYARD------------------------------------------------------------------
+add repo:(/etc/apt/source.list)
+
+deb http://192.168.76.57/sw/repo/maria_db/debian/8.6.0/amd64 / 
+
+apt-get install mariadb-server mariadb-client libmariadbclient18 libmariadbclient-dev libmariadbd-dev autoconf libtool unzip dos2unix
+
+CHANGE /etc/snort/snort.conf
+					step6: 
+					output  unified2:filename snort.u2,limit 128
+					
+mkdir dl
+cd dl/
+wget -q path to barnyard
+unzip baryarnd 
+cd barnyard/
+./autogen.sh
+ln -s /usr/include/dumbnet.h /usr/include/dnet.h
+ldconfig
+./configure --with-mysql --with-mysql-libraries=/usr/lib/
+make
+make install
+which baryarnd
+cp etc/barnyard2.conf /etc/snort/
+mkdir /var/log/barnyard2
+touch /var/log/snort/barnyard2.waldo
+chown snort:snort /var/log/snort/barnyard2.waldo
+
+
+MYSQL:
+
+mysql -u -root -p
+> create database if not exists snort;
+>use snort;
+>source ~/dl/barnyard2-master/schemas/create_mysql;
+>create user "snort"@"localhost" identified by "toor";
+>grant create,insert,select,delete,update on snort.* to "snort"@"localhost";
+>exit
+
+vim /etc/snort/barnyard2.conf
+Write on the last line
+output database:log,mysql,user=snort,password=toor,dbname=snort,host=localhost
+
+chmod o-r /etc/snort/baryarnd2.conf
+cd dl/
+wget -q create-sidemap.pl
+dos2unix create-sidemap.pl
+chmod 755 create-sidemap.pl
+./create-sidemap.pl /etc/snort/rules/ >/etc/snort/sid-msg.map
+vim /etc/snort/rules/local.rules
+alert ip any any -> any any (msg:"IP PACKETS FOUND";sid:3666;rev:1)
+
+snort -q -u snort -g snort -c /etc/snort/snort.conf -i eth0
+
+new window::
+
+barnyard2 -c /etc/snort/barnyard2.conf -d /var/log/snort/ -f snort.u2 -w /var/log/snort/barnyard2.waldo -g snort -u snort
+
+
+-----------------------------------------------BASE--------------------------------------------------------
+BASE :
+
+apt-get install install apache2 php5 p7zip libapache2-mod-php5 php5-mcrypt php5-mysqlnd libphp-adodb unzip 
+cd dl
+wget path to base
+tar zxf base
+cd base
+mv base1.1.5 /var/www/html/base/
+chown -R www-data:www-data /var/www/html/base/
+vim /etc/php5/apache2/php.ini
+change line 449
+error_reporting=E_ALL & ~E_NOTICE
+
+service apache2 restart
+
+adodb  path   ---- /usr/share/php/adodb
+
+**************************************************************NAGIOS*************************************************************************************
+
+apt-get install apache2 mariadb-server php5-mysqlnd php5 libapache2-mod-php5 php5-mcrypt php5-cgi php5-gd php5-common php5-curl build-essential libgd2-xpm-dev openssl libssl1.0.0 libssl-dev xinetd apache2-utils unzip curl tree
+
+CREATE & CONFIGURE NAGIOS:
+
+getent passwd nagios
+useradd nagios 
+passwd nagios
+getent group nagios
+groupadd nagcmd
+usermod -a -G nagcmd nagios
+
+DOWNLOAD & EXTRACT NAGIOS:
+
+mkdir dl
+cd dl
+wget path to nagios
+tar zxf nagios
+cd nagios
+./configure --with-nagios-group=nagios --with-command-group=nagcmd
+make all
+make install
+make install-commandmode
+make install-init
+make install-config
+
+/usr/bin/install -c -m 644 sample-config/httpd.conf /etc/apache2/sites-available/nagios.conf
+usermod -G nagcmd www-data
+cat /etc/group|grep nagcmd
+
+
+DOWNLOAD AND INSTALL NAGIOS-PLUGIN:
+
+cd dl/
+wget path to nagios plugins
+tar zxf plugins
+cd plugins
+ls -l /usr/local/nagios/libexec/
+This should be empty
+./configure --with-nagios-user=nagios --with-nagios-group=nagios --with-openssl
+make 
+make install
+ls -l /usr/local/nagios/libexec/
+
+
+NRPE DOWNLOAD AND CONFIGURE:
+wget path to nrpe
+tar xzf nrpe
+cd nrpe
+./configure --enable-command-args --with-nagios-user=nagios --with-nagios-group=nagios
+--with-ssl=/usr/bin/openssl --with-ssl-lib=/usr/lib/x86_64-linux-gnu
+make all
+make install-daemon
+ls -l /usr/local/nagios/libexec/ |grep nrpe
+make install-plugin
+cp sample-config/nrpe.cfg /usr/local/nagios/etc/nrpe.cfg
+vim /usr/local/nagios/etc/nrpe.cfg
+allowed_host 127.0.0.1, 192.168.76.28(NAGIOS SERVER IP)
+
+netstat -ant |grep 5666
+/usr/local/nagios/bin/nrpe -c /usr/local/nagios/etc/nrpe.cfg -d
+netstat -ant |grep 5666
+
+cd /usr/local/nagios/libexec
+ls
+./check_nrpe -H 192.168.76.28(server ip) 
+
+CONFIGURE NAGIOS:
+
+APACHE:
+vim /usr/local/nagios/etc/nagios.cfg
+vim /usrr/local/nagios/etc/object/commands.cfg
+AT END WRITE:
+
+
+define command{
+				command_name check_nrpe
+				command_line $USER1$/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
+				}
+				
+a2enmod rewrite
+a2enmod cgi
+service apache2 restart
+
+htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+ln -s /etc/apache2/sites-available/nagios.conf /etc/apache2/sites-enabled/
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+service nagios start
+rebbot
+service nagios start
+
+-----------------------------------------WINDOWS CLIENT---------------------------------
+
+vim /usr/local/nagios/etc/nagios.cfg
+uncomment cgf_file=/usr/local/nagios/etc/objects/windows.cfg
+vim /usr/local/nagios/objects/windows.cfg
+host{
+	ip address (server ip)
+	hostname winser1
+	}			
+services{
+}
+change hostname in every services
+
+ON WINDOWS MACHINE::
+
+install NSCLIENT++ from sir website
+During installations---insert server ip 
+						enter password
+						check all the boxes except 4th
+						install
+						
+on server::
+
+vim /usr/local/nagios/objects/commands.cfg
+'check_nt' line
+edit in 
+command_line $USER1$/check_nrpe ......-p 12486 -s password123 -v......
+service nagios restart
+
+------------------------------------FOR LINUX CLIENT--------------------------------------
+apt-get install nagios-plugins
+apt-get install nagios-nrpe-server 
+vim /etc/nagios/nrpe.cfg
+allowed_host--put server ip address
+service nagios-nrpe-server restart
+
+server::::
+/usr/local/nagios/libexec/check_nrpe -H 192.168.76.59(client IP)
+vim /usr/local/nagios/etc/nagios.cfg 
+
+uncomment cfg_dir=/usr/local/nagios/etc/servers
+
+mkdir /usr/local/nagios/etc/servers
+cd /usr/local/nagios/etc/servers
+vim debian1.cfg
+copy debian1.txt from sir's website
+
+change client ip and hostname
+testing:  
+
+
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+service nagios start
+reboot
+service nagios start
+
+
+
+
+
+****************************************************VPN********************************************
+vim /etc/hostname
+vpnserver
+apt-get install openvpn tcpdump
+vim ser.conf 
+
+proto udp
+port 1194
+dev tun
+auth none
+cipher none
+ifconfig 10.8.0.1 10.8.0.2
+verb 3
+
+
+openvpn --config ser.conf
+ifconfig
+tcpdump icmp -i tun0
+
+------------------------------------------------ON WINDOWS-----------------------------------------------
+download openvpn from sir's website and install it
+create folder c:/DEMO
+in DEMO create a file client.conf
+
+remote 192.168.76.28(server ip)
+proto udp
+port 1194
+dev tun
+auth none
+cipher none
+ifconfig 10.8.0.2 10.8.0.1
+verb 3
+open cmd(RUN as ADMIN):
+cd c:\programfiles(x86)\openvpntech\openvpnclient\core\
+openvpn --config c:/DEMO/client.conf
+
+ping server ip -n 1
+
+---------------------------------------------------------------------------------------------------------
+*******************************************DIGITAL CERTIFICATE*****************************************
+IN LINUX:
+
+which openssl
+apt-get install openssl apache2
+a2enmod ssl
+a2ensite default-ssl
+mkdir /etc/apache2/ssl/
+cd /etc/apache2/ssl/
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/apache2/ssl/apache.key -out /etc/apache2/ssl/apache.crt
+ls
+chmod  600 /etc/apache2/ssl/*
+vim /etc/apache2/sites-enabled/default-ssl.conf
+SERVER ADMIN KE NICHE
+ServerName 192.168.76.28(your ip address):443
+
+SSLcertificate file path /etc/apache2/ssl/apache.crt
+SSLkey file path /etc/apache2/ssl/apache.key
+
+service apache2 reload
+
+openssl s_client -connect 192.168.76.28(your ip):443
+
+
+***********************************************REVERSE PROXY******************************************************
+
+on proxy-server::
+
+apt-get install nginx
+ls -l /etc/ngnix/sites-enabled/
+rm /etc/ngnix/sites-enabled/*
+vim /etc/ngnix/sites-available/rp.conf
+
+server{
+		listen 80;
+		location /{
+					proxy_pass http://192.168.76.50(apache webserver id);
+					}
+	}
+
+ln -s /etc/ngnix/sites-available/rp.conf /etc/ngnix/sites-enabled/
+service nginx restart
+
+ on apache webserver:
+ 
+ apt-get install apache2
+ echo "Apache home page" >/var/www/html/index.html
+ 
+ 
+****************************************tcpdump************************************************
+
+apt-get tcpdump
+which tcpdump
+tcpdump -D 
+tcpdump tcp
+tcpdump -c 2
+tcpdump -c 2 -n 
+mkdir hpc 
+cd hpc
+ls -l 
+tcpdump -c 2 -w file1.dump
+tcpdump -r file1.dump
+tcpdump host 192.168.76.57
+tcpdump host 
+
+
+
+
+
+
+
+
+
+
+
+
